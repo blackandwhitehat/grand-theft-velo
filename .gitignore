@@ -1,0 +1,24 @@
+# third-party checkouts and local build products
+/chiaki-ng/
+/deps/
+/prefix/
+/venv/
+/research/
+*.log
+# compiled clients
+/native/bridge
+/native/register
+/native/rptest
+# captures from a real console (may show account names and gameplay)
+*.bin
+*.jpg
+!/site/img/*.jpg
+!/docs/*.jpg
+!/press/**/*.jpg
+/native/frames*/
+/native/dry.out
+/pi/
+__pycache__/
+# never commit console pairing material
+credentials.json
+*.env

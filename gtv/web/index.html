@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grand Theft Velo</title>
+<style>
+:root{--bg:#0e0f13;--card:#181a21;--line:#2a2d38;--fg:#eef0f6;--mut:#9097a8;--acc:#ff5fa2;--ok:#30d158;--warn:#ff9f0a;--bad:#ff453a;--blue:#64d2ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+header{padding:18px 16px 6px;max-width:860px;margin:0 auto}h1{margin:0;font-size:22px;letter-spacing:.2px}h1 span{color:var(--acc)}.sub{color:var(--mut);font-size:13px}
+main{max-width:860px;margin:0 auto;padding:8px 12px 60px;display:grid;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+h2{margin:0 0 10px;font-size:13px;letter-spacing:.9px;text-transform:uppercase;color:var(--mut);font-weight:600}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.grow{flex:1;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:#11131a;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.tile b{display:block;font-size:22px;font-variant-numeric:tabular-nums}.tile small{color:var(--mut)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mut);margin-right:7px;vertical-align:1px}.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+button{font:inherit;color:var(--fg);background:#252834;border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer}button:hover{background:#2e3240}button:disabled{opacity:.5;cursor:default}
+button.go{background:var(--acc);border-color:var(--acc);color:#1a0610;font-weight:700;font-size:17px;padding:13px 22px}button.stop{background:#3a1d22;border-color:#6b2a33}
+input,select{font:inherit;color:var(--fg);background:#11131a;border:1px solid var(--line);border-radius:9px;padding:8px 10px;max-width:100%}input[type=range]{padding:0;width:100%;accent-color:var(--acc)}
+label{display:block;color:var(--mut);font-size:13px;margin:10px 0 3px}.val{color:var(--fg);font-variant-numeric:tabular-nums}
+.bar{height:10px;background:#11131a;border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative}.bar i{position:absolute;top:0;bottom:0;background:var(--acc)}
+.list{display:grid;gap:6px;margin-top:8px}.item{display:flex;align-items:center;gap:10px;background:#11131a;border:1px solid var(--line);border-radius:10px;padding:8px 10px}.item small{color:var(--mut)}
+.msg{margin-top:8px;font-size:13px;color:var(--warn);min-height:1em}.msg.ok{color:var(--ok)}
+ol{margin:6px 0 0 18px;padding:0;color:var(--mut)}ol li{margin:8px 0}ol b{color:var(--fg)}
+pre{margin:0;font:12px/1.5 ui-monospace,Menlo,monospace;color:var(--mut);white-space:pre-wrap;max-height:220px;overflow:auto}
+a{color:var(--blue)}a.btn{color:var(--fg);background:#252834;border:1px solid var(--line);border-radius:10px;padding:9px 14px;text-decoration:none}details summary{cursor:pointer;color:var(--mut)}
+</style>
+</head>
+<body>
+<header><h1>Grand Theft <span>Velo</span></h1><div class="sub">Ride a PS5 game with your trainer. <span id="ver"></span></div></header>
+<main>
+
+<section class="card">
+  <h2>Ride</h2>
+  <div class="row"><button id="rideBtn" class="go">Start ride</button><div class="grow"><div id="rideState">Loading…</div><div class="sub" id="rideHint"></div></div></div>
+  <div class="msg" id="rideMsg"></div>
+  <div class="grid" style="margin-top:10px">
+    <div class="tile"><small>Power</small><b id="tPower">0 W</b></div>
+    <div class="tile"><small>Cadence</small><b id="tCad">0 rpm</b></div>
+    <div class="tile"><small>Steering</small><b id="tSteer">0°</b></div>
+    <div class="tile"><small>Brake</small><b id="tBrake">off</b></div>
+    <div class="tile"><small>Heart rate</small><b id="tHr">–</b></div>
+    <div class="tile"><small>This ride</small><b id="tRide">–</b></div>
+  </div>
+  <label>Throttle sent to the game (R2)</label><div class="bar"><i id="bR2" style="left:0;width:0"></i></div>
+  <label>Steering sent to the game</label><div class="bar"><i id="bLx" style="left:50%;width:0"></i></div>
+  <label><input type="checkbox" id="autostart"> Start ride mode automatically when this box powers on</label>
+</section>
+
+<section class="card">
+  <h2>Rides</h2>
+  <div class="sub">Every ride is saved while ride mode is on. Download one and upload it to Strava, Garmin Connect or intervals.icu. Distance is what your power would give on a flat road; the game's own distance is not read yet.</div>
+  <div class="list" id="rideList" style="margin-top:8px"></div>
+</section>
+
+<section class="card">
+  <h2>Connections</h2>
+  <div class="list">
+    <div class="item"><span class="dot" id="dPs5"></span><div class="grow"><b>PS5</b> <small id="sPs5"></small></div></div>
+    <div class="item"><span class="dot" id="dTr"></span><div class="grow"><b>Trainer</b> <small id="sTr"></small></div></div>
+    <div class="item"><span class="dot" id="dSt"></span><div class="grow"><b>Steering</b> <small id="sSt"></small></div></div>
+    <div class="item"><span class="dot" id="dHr"></span><div class="grow"><b>Heart rate</b> <small id="sHr"></small></div></div>
+    <div class="item"><span class="dot" id="dPad"></span><div class="grow"><b>Gamepad</b> <small id="sPad"></small></div></div>
+    <div class="item"><span class="dot" id="dBr"></span><div class="grow"><b>Brake switch</b> <small id="sBr"></small></div></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Bike sensors</h2>
+  <div class="row"><button id="scanBtn">Search for sensors</button><span class="sub">Wake the trainer by pedaling first. Takes 8 seconds.</span></div>
+  <div class="list" id="scanList"></div>
+  <div class="msg" id="scanMsg"></div>
+  <details style="margin-top:10px"><summary>More sensor options</summary>
+    <label>Brake switch GPIO pin (BCM number; the switch goes between this pin and a ground pin). Empty for none.</label>
+    <input id="brakePin" inputmode="numeric" size="4"> <button id="brakeSave">Save</button>
+    <label><input type="checkbox" id="steerInvert"> Steering is reversed (left turns right)</label>
+    <div class="row" style="margin-top:8px"><button id="steerCenter">Center the bars</button><span class="sub" id="centerMsg">Hold the bars straight, then press.</span></div>
+    <label>Cadence-only sensors: watts assumed per rpm <span class="val" id="vCw"></span></label><input type="range" id="cadWatts" min="0.5" max="6" step="0.1">
+    <label>Trainer resistance as a road gradient <span class="val" id="vGrade"></span> (controllable trainers only)</label><input type="range" id="grade" min="-5" max="15" step="0.5">
+    <div class="row" style="margin-top:8px"><button id="forgetTr">Forget trainer</button><button id="forgetSt">Forget steering</button><button id="forgetHr">Forget heart rate</button></div>
+  </details>
+</section>
+
+<section class="card">
+  <h2>Gamepad (optional)</h2>
+  <div class="sub">For everything off the bike. Put the controller in pairing mode first: on a DualSense hold Create and PS until the light flashes fast. It then belongs to this box, not the console.</div>
+  <label style="margin-top:8px"><input type="checkbox" id="padSteer"> No steering sensor? Strap this controller to the handlebars and steer with it</label>
+  <div class="sub" id="padSteerMsg"></div>
+  <div class="list" id="padBars"></div>
+  <div class="row" style="margin-top:8px"><button id="padScan">Search for a controller</button><span class="sub">Takes 10 seconds. A USB cable also works with no pairing.</span></div>
+  <div class="list" id="padList"></div><div class="msg" id="padMsg"></div>
+</section>
+
+<section class="card">
+  <h2>Tuning</h2>
+  <label>Watts for full throttle <span class="val" id="v_full_watts"></span></label><input type="range" data-k="full_watts" min="80" max="600" step="10">
+  <label>Watts where pedaling starts to count <span class="val" id="v_min_watts"></span></label><input type="range" data-k="min_watts" min="0" max="120" step="5">
+  <label>Sprint above (taps Cross; 0 turns it off) <span class="val" id="v_sprint_watts"></span></label><input type="range" data-k="sprint_watts" min="0" max="1200" step="20">
+  <label>Handlebar angle for full steering <span class="val" id="v_steer_full"></span></label><input type="range" data-k="steer_full" min="8" max="45" step="1">
+  <label>Steering dead zone <span class="val" id="v_steer_deadzone"></span></label><input type="range" data-k="steer_deadzone" min="0" max="8" step="0.5">
+  <label>Brake when you stop pedaling, for <span class="val" id="v_stop_brake_s"></span></label><input type="range" data-k="stop_brake_s" min="0" max="6" step="0.5">
+  <div class="sub">Used when no brake switch is set. 0 means coast.</div>
+  <label>Disconnect from the PS5 after this long without pedaling <span class="val" id="v_idle_s"></span></label><input type="range" data-k="idle_s" min="30" max="1800" step="30">
+</section>
+
+<section class="card">
+  <h2>PS5 setup</h2>
+  <div id="ps5Summary" class="sub"></div>
+  <ol>
+    <li><b>On the PS5:</b> Settings, System, Remote Play, turn on Enable Remote Play. Under Power Saving, Features Available in Rest Mode, turn on Stay Connected to the Internet and Enable Turning On PS5 from Network.</li>
+    <li><b>Find the console.</b> <button id="findPs5">Search the network</button> or type its address: <input id="ps5Host" placeholder="192.168.1.50" size="15"> <button id="ps5HostSave">Use</button><div class="list" id="ps5List"></div></li>
+    <li><b>Sign in to PlayStation once</b> so the console knows whose Remote Play this is. <a id="loginLink" target="_blank" rel="noopener">Open the sign-in page</a>, sign in, and when the page just says "redirect", copy the whole address from the address bar and paste it here:<br><input id="redirect" placeholder="https://remoteplay.dl.playstation.net/remoteplay/redirect?code=…" style="width:100%;margin-top:6px"> <button id="accountSave" style="margin-top:6px">Save account</button></li>
+    <li><b>Pair.</b> On the PS5: Settings, System, Remote Play, Link Device. Type the 8-digit code: <input id="pin" inputmode="numeric" size="9" maxlength="9"> <button id="pairBtn">Pair</button></li>
+  </ol>
+  <div class="msg" id="ps5Msg"></div>
+  <div class="row" style="margin-top:8px"><button id="forgetPs5">Forget this PS5</button></div>
+</section>
+
+<section class="card"><h2>Log</h2><pre id="log"></pre></section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const api = async (path, body) => { const r = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); return r.json(); };
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const say = (id, text, ok) => { const m = $(id); m.textContent = text || ''; m.className = 'msg' + (ok ? ' ok' : ''); };
+const dot = (id, level) => { $(id).className = 'dot' + (level ? ' ' + level : ''); };
+let S = null, touched = {}, wasRecording = false;
+async function loadRides() {
+  const r = await api('/api/rides'), list = $('rideList'); list.replaceChildren();
+  if (!r.rides.length) { list.append(el('div', 'sub', 'No rides yet.')); return; }
+  for (const x of r.rides) { const it = el('div', 'item'), g = el('div', 'grow'), d = new Date(x.start * 1000);
+    g.append(el('b', '', d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })),
+      el('div', 'sub', Math.round(x.moving_s / 60) + ' min · ' + x.avg_watts + ' W avg · ' + (x.distance_m / 1000).toFixed(1) + ' km' + (x.avg_hr ? ' · ' + x.avg_hr + ' bpm' : '')));
+    const a = el('a', '', 'Download'); a.href = '/api/rides/' + x.id + '.tcx'; a.className = 'btn';
+    const del = el('button', '', 'Delete'); del.onclick = async () => { if (confirm('Delete this ride?')) { await api('/api/rides/' + x.id + '/delete', {}); loadRides(); } };
+    it.append(g, a, del); list.append(it); }
+}
+loadRides();
+
+function paint(s) {
+  S = s; $('ver').textContent = 'v' + s.version;
+  const sess = s.ps5.session, c = s.config;
+  $('tPower').textContent = s.trainer.power + ' W'; $('tCad').textContent = s.trainer.cadence + ' rpm';
+  $('tSteer').textContent = s.steering.angle + '°'; $('tBrake').textContent = s.brake.pressed ? 'ON' : 'off';
+  $('bR2').style.width = (s.output.r2 / 2.55).toFixed(0) + '%';
+  const lx = s.output.lx / 32767; $('bLx').style.left = (lx < 0 ? 50 + lx * 50 : 50) + '%'; $('bLx').style.width = Math.abs(lx) * 50 + '%';
+  const btn = $('rideBtn'); btn.textContent = s.starting ? 'Starting…' : s.ride ? 'Stop ride' : 'Start ride'; btn.className = s.ride ? 'stop' : 'go'; btn.disabled = s.starting;
+  $('rideState').textContent = !c.ps5.paired ? 'Pair with your PS5 below to begin.' : s.starting ? 'Waking and connecting to the PS5…' : !s.ride ? 'Ride mode is off. The PS5 is left alone.' :
+    sess === 'connected' ? 'Connected. You are the controller. (' + s.ps5.fps + ' fps coming back)' : sess === 'connecting' ? 'Connecting to the PS5…' : 'Ride mode is on. Pedal or touch the gamepad to connect.';
+  $('rideHint').textContent = s.ride && sess !== 'connected' && s.ps5.last_end ? 'Last session ended: ' + s.ps5.last_end : s.rumble.left + s.rumble.right ? 'Rumble from the game: ' + s.rumble.left + ' / ' + s.rumble.right : '';
+  dot('dPs5', !c.ps5.paired ? 'bad' : sess === 'connected' ? 'ok' : s.ps5.state === 'awake' || s.ps5.state === 'standby' ? 'warn' : 'bad');
+  $('sPs5').textContent = !c.ps5.host ? 'not set up' : (c.ps5.name || 'PS5') + ' at ' + c.ps5.host + ': ' + s.ps5.state + (c.ps5.paired ? ', paired' : ', not paired') + (sess === 'connected' ? ', Remote Play connected' : '');
+  const lvl = st => st === 'connected' ? 'ok' : st === 'not chosen' ? '' : 'warn';
+  dot('dTr', lvl(s.trainer.state)); $('sTr').textContent = (c.trainer ? c.trainer.name + ': ' : '') + s.trainer.state + (s.trainer.state === 'connected' && s.trainer.info.data ? ' (' + s.trainer.info.data.join(', ') + '; resistance control: ' + s.trainer.info.control + ')' : '');
+  dot('dSt', s.steering.source ? 'ok' : lvl(s.steering.state)); $('sSt').textContent = s.steering.source === 'gamepad' ? 'controller on the handlebars' : (c.steering ? c.steering.name + ': ' : '') + s.steering.state + (c.steering ? '' : ' (the gamepad stick still steers)');
+  $('tHr').textContent = s.heart.bpm ? s.heart.bpm + ' bpm' : '–';
+  const rec = s.recording; $('tRide').textContent = rec.on ? Math.floor(rec.moving_s / 60) + ':' + String(rec.moving_s % 60).padStart(2, '0') + ' · ' + (rec.distance_m / 1000).toFixed(1) + ' km' : '–';
+  if (wasRecording && !rec.on) loadRides(); wasRecording = rec.on;
+  dot('dHr', lvl(s.heart.state)); $('sHr').textContent = (c.heart ? c.heart.name + ': ' : '') + s.heart.state;
+  dot('dPad', s.gamepad.state === 'connected' ? 'ok' : ''); $('sPad').textContent = s.gamepad.name || s.gamepad.state;
+  dot('dBr', s.brake.state.startsWith('watching') ? 'ok' : s.brake.state.startsWith('unavailable') ? 'bad' : ''); $('sBr').textContent = s.brake.state;
+  for (const inp of document.querySelectorAll('input[data-k]')) { const k = inp.dataset.k; if (!touched[k]) inp.value = c.mapping[k]; $('v_' + k).textContent = fmt(k, inp.value); }
+  if (!touched.cadWatts) $('cadWatts').value = c.cadence_watts; $('vCw').textContent = (+$('cadWatts').value).toFixed(1) + ' W';
+  if (!touched.grade) $('grade').value = c.grade; $('vGrade').textContent = (+$('grade').value).toFixed(1) + ' %';
+  if (document.activeElement !== $('brakePin')) $('brakePin').value = c.brake_gpio === null ? '' : c.brake_gpio;
+  $('padSteer').checked = c.pad_steer;
+  $('padSteerMsg').textContent = !c.pad_steer ? '' : s.steering.source === 'sensor' ? 'Your steering sensor is connected, so it is used instead.' : s.gamepad.state !== 'connected' ? 'Pair a controller first.' : !s.steering.pad_motion ? 'Waiting for the motion sensors. A DualSense or DualShock 4 has them; most other pads do not.' : !s.steering.pad_calibrated ? 'Hold the bars still for a second so it can settle.' : 'Steering with the controller. Bars straight, then press Center the bars under Bike sensors if it pulls to one side.';
+  const pb = $('padBars'), pads = s.gamepad.pads || [], sig = JSON.stringify(pads) + c.pad_steer;
+  if (pb.dataset.sig !== sig) { pb.dataset.sig = sig; pb.replaceChildren();
+    if (c.pad_steer && pads.length > 1) for (const p of pads) { const it = el('div', 'item'), g = el('div', 'grow'); g.append(el('b', '', p.name), el('small', '', p.on_bars ? '  on the handlebars (steering)' : '  in your hands')); it.append(g);
+      if (!p.on_bars) { const b = el('button', '', 'This one is on the bars'); b.onclick = () => api('/api/devices', { pad_steer_address: p.address }); it.append(b); } pb.append(it); } }
+  $('steerInvert').checked = c.steer_invert; $('autostart').checked = c.autostart;
+  $('ps5Summary').textContent = c.ps5.paired ? 'Paired with ' + (c.ps5.name || 'your PS5') + '. Nothing more to do here.' : 'Four steps, done once.' + (c.ps5.host ? ' Console: ' + c.ps5.host + '.' : '') + (c.ps5.has_account ? ' Account saved.' : '');
+  $('log').textContent = s.log.join('\n');
+}
+const fmt = (k, v) => k.includes('watts') ? v + ' W' : k.startsWith('steer') ? v + '°' : k === 'idle_s' ? Math.round(v / 60 * 10) / 10 + ' min' : k === 'stop_brake_s' ? (+v ? v + ' s' : 'off (coast)') : v;
+async function tick() { try { paint(await api('/api/status')); } catch (e) { $('rideState').textContent = 'Cannot reach the box.'; } }
+setInterval(tick, 1000); tick();
+
+$('rideBtn').onclick = async () => { say('rideMsg', ''); const r = await api('/api/ride', { on: !S.ride }); if (!r.ok) say('rideMsg', r.error); tick(); };
+$('autostart').onchange = e => api('/api/ride', { autostart: e.target.checked });
+for (const inp of document.querySelectorAll('input[data-k]')) {
+  inp.oninput = () => { touched[inp.dataset.k] = 1; $('v_' + inp.dataset.k).textContent = fmt(inp.dataset.k, inp.value); };
+  inp.onchange = async () => { await api('/api/mapping', { [inp.dataset.k]: +inp.value }); touched[inp.dataset.k] = 0; };
+}
+$('cadWatts').oninput = () => { touched.cadWatts = 1; }; $('cadWatts').onchange = async e => { await api('/api/devices', { cadence_watts: +e.target.value }); touched.cadWatts = 0; };
+$('grade').oninput = () => { touched.grade = 1; }; $('grade').onchange = async e => { const r = await api('/api/grade', { grade: +e.target.value }); touched.grade = 0; say('scanMsg', r.applied ? 'Resistance set.' : 'Saved. It will apply when a controllable trainer is connected.', r.applied); };
+$('steerCenter').onclick = async () => { const r = await api('/api/steer/center', {}); $('centerMsg').textContent = r.ok ? 'Centerd. Straight now reads 0°.' : r.error; };
+$('padSteer').onchange = e => api('/api/devices', { pad_steer: e.target.checked });
+$('steerInvert').onchange = e => api('/api/devices', { steer_invert: e.target.checked });
+$('brakeSave').onclick = () => api('/api/devices', { brake_gpio: $('brakePin').value });
+$('forgetTr').onclick = () => api('/api/devices', { trainer: null }); $('forgetSt').onclick = () => api('/api/devices', { steering: null }); $('forgetHr').onclick = () => api('/api/devices', { heart: null });
+
+$('scanBtn').onclick = async () => {
+  $('scanBtn').disabled = true; say('scanMsg', 'Searching…'); const list = $('scanList'); list.replaceChildren();
+  const r = await api('/api/scan', {}); $('scanBtn').disabled = false; say('scanMsg', r.devices.length ? '' : 'Nothing found. Is the trainer awake and not connected to another app?');
+  const label = { trainer: 'Trainer', power: 'Power meter', cadence: 'Cadence sensor', steering: 'Steering', heart: 'Heart rate' };
+  for (const d of r.devices) { const it = el('div', 'item'); const g = el('div', 'grow'); g.append(el('b', '', d.name), el('small', '', '  ' + label[d.kind] + ', signal ' + d.rssi)); it.append(g);
+    const slot = d.kind === 'steering' ? 'steering' : d.kind === 'heart' ? 'heart' : 'trainer';
+    const b = el('button', '', slot === 'steering' ? 'Use for steering' : slot === 'heart' ? 'Use for heart rate' : 'Use as trainer'); b.onclick = async () => { await api('/api/devices', { [slot]: { address: d.address, name: d.name } }); say('scanMsg', d.name + ' saved.', true); }; it.append(b); list.append(it); }
+};
+$('padScan').onclick = async () => {
+  $('padScan').disabled = true; say('padMsg', 'Searching…'); const list = $('padList'); list.replaceChildren();
+  const r = await api('/api/pad/scan', {}); $('padScan').disabled = false; say('padMsg', r.pads.length ? '' : 'No controller found. Is its light flashing fast?');
+  for (const d of r.pads) { const it = el('div', 'item'); const g = el('div', 'grow'); g.append(el('b', '', d.name), el('small', '', '  ' + d.address)); it.append(g);
+    const b = el('button', '', 'Pair'); b.onclick = async () => { b.disabled = true; say('padMsg', 'Pairing…'); const p = await api('/api/pad/pair', { address: d.address }); b.disabled = false; say('padMsg', p.ok ? 'Paired. Press a button on it.' : 'Pairing failed: ' + p.steps.map(s => s.step + ': ' + s.detail).join('; '), p.ok); }; it.append(b); list.append(it); }
+};
+$('findPs5').onclick = async () => {
+  say('ps5Msg', 'Searching…'); const r = await api('/api/ps5/discover'); const list = $('ps5List'); list.replaceChildren(); say('ps5Msg', r.consoles.length ? '' : 'No PS5 answered. Type its address instead (shown on the PS5 under Settings, Network, View Connection Status).');
+  for (const c of r.consoles) { const it = el('div', 'item'); const g = el('div', 'grow'); g.append(el('b', '', c.name), el('small', '', '  ' + c.host + ', ' + c.state)); it.append(g); const b = el('button', '', 'Use this one'); b.onclick = async () => { await api('/api/ps5/host', c); say('ps5Msg', c.name + ' selected.', true); }; it.append(b); list.append(it); }
+};
+api('/api/ps5/discover').then(r => { $('loginLink').href = r.login_url; });
+$('ps5HostSave').onclick = async () => { if ($('ps5Host').value.trim()) { await api('/api/ps5/host', { host: $('ps5Host').value }); say('ps5Msg', 'Console address saved.', true); } };
+$('accountSave').onclick = async () => { const v = $('redirect').value.trim(); const r = await api('/api/ps5/account', v.startsWith('http') ? { redirect: v } : { base64: v }); say('ps5Msg', r.ok ? 'Account saved.' : r.error, r.ok); if (r.ok) $('redirect').value = ''; };
+$('pairBtn').onclick = async () => { $('pairBtn').disabled = true; say('ps5Msg', 'Pairing…'); const r = await api('/api/ps5/register', { pin: $('pin').value }); $('pairBtn').disabled = false; say('ps5Msg', r.ok ? 'Paired with ' + r.name + '.' : r.error, r.ok); if (r.ok) $('pin').value = ''; };
+$('forgetPs5').onclick = async () => { if (confirm('Forget the pairing with this PS5?')) { await api('/api/ps5/forget', {}); say('ps5Msg', 'Pairing removed.', true); } };
+</script>
+</body>
+</html>
